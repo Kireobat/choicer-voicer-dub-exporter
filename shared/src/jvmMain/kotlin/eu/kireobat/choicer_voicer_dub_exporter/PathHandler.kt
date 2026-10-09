@@ -32,7 +32,7 @@ class PathHandler {
                     ?.takeIf(String::isNotBlank)
                     ?.let(Path::of)
                     ?: Path.of(System.getProperty("user.home")).resolve(".local").resolve("share")
-                dataHome.resolve("YeahMaybe").resolve("ChoicerVoicer")
+                dataHome.resolve("YeahMaybe").resolve("ChoicerVoicer").resolve("game")
             }
             OS.MACOS -> Path.of(System.getProperty("user.home"))
                 .resolve("Library")
