@@ -2,10 +2,10 @@ package eu.kireobat.choicer_voicer_dub_exporter
 
 import eu.kireobat.choicer_voicer_dub_exporter.utils.OS
 import eu.kireobat.choicer_voicer_dub_exporter.utils.OsUtil
+import java.nio.file.Files
 import java.nio.file.Path
-import kotlin.io.path.Path
 
-data class ChoicerVoicerDataPaths (
+data class ChoicerVoicerDataPaths(
     val basePath: Path,
     val temp: Path = Path.of(".temp"),
     val packsChatter: Path = Path.of("packs_chatter"),
@@ -22,7 +22,7 @@ data class ChoicerVoicerDataPaths (
 class PathHandler {
 
     fun getChoicerVoicerPaths(): ChoicerVoicerDataPaths {
-        val appDataPath = when (OsUtil().detectOperatingSystem()) {
+        val basePath = when (OsUtil().detectOperatingSystem()) {
             OS.WINDOWS -> Path.of(
                 System.getenv("APPDATA")
                     ?: throw IllegalStateException("APPDATA environment variable is not set")
@@ -31,8 +31,12 @@ class PathHandler {
                 val dataHome = System.getenv("XDG_DATA_HOME")
                     ?.takeIf(String::isNotBlank)
                     ?.let(Path::of)
+                    ?.takeIf(Path::isAbsolute)
                     ?: Path.of(System.getProperty("user.home")).resolve(".local").resolve("share")
-                dataHome.resolve("YeahMaybe").resolve("ChoicerVoicer").resolve("game")
+                val gameDataRoot = dataHome.resolve("YeahMaybe").resolve("ChoicerVoicer")
+                listOf(gameDataRoot, gameDataRoot.resolve("game"))
+                    .maxByOrNull(::existingDataDirectoryCount)
+                    ?: gameDataRoot
             }
             OS.MACOS -> Path.of(System.getProperty("user.home"))
                 .resolve("Library")
@@ -41,6 +45,10 @@ class PathHandler {
                 .resolve("ChoicerVoicer")
                 .resolve("game")
         }
-        return ChoicerVoicerDataPaths(appDataPath)
+        return ChoicerVoicerDataPaths(basePath)
     }
+
+    private fun existingDataDirectoryCount(basePath: Path): Int =
+        listOf(Path.of("packs_voice"), Path.of("recordings", "dub_recordings"))
+            .count { Files.isDirectory(basePath.resolve(it)) }
 }

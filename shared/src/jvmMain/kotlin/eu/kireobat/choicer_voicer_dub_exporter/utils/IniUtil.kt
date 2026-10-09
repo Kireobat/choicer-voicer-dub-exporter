@@ -4,16 +4,14 @@ import eu.kireobat.choicer_voicer_dub_exporter.interfaces.PackInfo
 import eu.kireobat.choicer_voicer_dub_exporter.interfaces.Placement
 import java.nio.file.Files
 import java.nio.file.Path
-import kotlin.collections.filter
-import kotlin.io.path.Path
 import kotlin.streams.toList
 
 class IniUtil {
     fun readVoicePackIni(path: Path): PackInfo {
 
-        val packInfo = PackInfo("",Path(""),emptyList(),"", emptyList())
+        val packInfo = PackInfo("", Path.of(""), emptyList(), "", emptyList())
 
-        Files.readString(Path("$path\\_pack_info.ini")).split("\n").let { string ->
+        Files.readString(path.resolve("_pack_info.ini")).split("\n").let { string ->
             string
                 .filter { it.isNotEmpty() && it.contains("=")}
                 .forEach {
@@ -23,7 +21,8 @@ class IniUtil {
                     } else if (it.startsWith("authors=")) {
                         packInfo.authors = it.substringAfter("authors=").trim().trim('"','[',']').split(",")
                     } else if (it.startsWith("icon=")) {
-                        packInfo.icon = path.resolve(it.substringAfter("icon=").trim().trim('"')) // unable to find the image in some cases i.e. ini says Icon.png file says _icon.png
+                        val iconPath = it.substringAfter("icon=").trim().trim('"').replace('\\', '/')
+                        packInfo.icon = path.resolve(iconPath) // Some packs use Windows separators in their INI files.
                     } else if (it.startsWith("readme=")) {
                         packInfo.readme = it.substringAfter("readme=").trim().trim('"')
                     }

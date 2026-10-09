@@ -10,11 +10,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import net.bramp.ffmpeg.FFmpegExecutor
 import org.jetbrains.compose.resources.decodeToImageBitmap
-import java.io.File
-import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
-import kotlin.io.path.Path
 
 actual suspend fun discoverRecordings(): List<String> =
     withContext(Dispatchers.IO) {
@@ -88,8 +85,10 @@ actual suspend fun render(
             .removePrefix("_dubrecord_")
     }
     val recordingPlacements = packInfo.lines.mapNotNull { placement ->
-        val lineName = Path.of(placement.wav).fileName.toString()
-            .substringBeforeLast('.', Path.of(placement.wav).fileName.toString())
+        val lineName = placement.wav
+            .substringAfterLast('/')
+            .substringAfterLast('\\')
+            .substringBeforeLast('.')
             .lowercase()
         val matchingPaths = recordingPathsByLine[lineName].orEmpty()
         require(matchingPaths.size <= 1) {
