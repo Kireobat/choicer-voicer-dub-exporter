@@ -128,22 +128,18 @@ actual suspend fun render(
 }
 
 private fun findFileByBaseName(directory: Path, baseName: String): Path {
-    val matches = Files.list(directory).use { files ->
+    return Files.list(directory).use { files ->
         files
             .filter(Files::isRegularFile)
             .filter {
                 val fileName = it.fileName.toString()
                 fileName.substringBeforeLast('.', fileName) == baseName
             }
-            .toList()
+            .findFirst()
+            .orElseThrow {
+                IllegalArgumentException("No file with base name '$baseName' found in '$directory'")
+            }
     }
-    require(matches.size == 1) {
-        when (matches.size) {
-            0 -> "No file with base name '$baseName' found in '$directory'"
-            else -> "Multiple files with base name '$baseName' found in '$directory'"
-        }
-    }
-    return matches.single()
 }
 
 actual suspend fun loadImageFromDisk(path: Path): ImageBitmap =
