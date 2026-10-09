@@ -22,7 +22,7 @@ class IniUtil {
                         packInfo.authors = it.substringAfter("authors=").trim().trim('"','[',']').split(",")
                     } else if (it.startsWith("icon=")) {
                         val iconPath = it.substringAfter("icon=").trim().trim('"').replace('\\', '/')
-                        packInfo.icon = path.resolve(iconPath) // Some packs use Windows separators in their INI files.
+                        packInfo.icon = findIcon(path, iconPath)
                     } else if (it.startsWith("readme=")) {
                         packInfo.readme = it.substringAfter("readme=").trim().trim('"')
                     }
@@ -38,6 +38,50 @@ class IniUtil {
         }
 
         return packInfo
+    }
+
+    private fun findIcon(packPath: Path, iconPath: String): Path {
+        val requestedPath = packPath.resolve(iconPath)
+        if (Files.isRegularFile(requestedPath)) {
+            return requestedPath
+        }
+
+        val requestedName = requestedPath.fileName.toString()
+            .substringBeforeLast('.', requestedPath.fileName.toString())
+            .lowercase()
+        val imageExtensions = setOf("bmp", "gif", "jpeg", "jpg", "png", "webp")
+        return Files.walk(packPath).use { files ->
+            files
+                .filter(Files::isRegularFile)
+                .filter { it.fileName.toString().substringAfterLast('.', "").lowercase() in imageExtensions }
+                .toList()
+                .minWithOrNull(
+                    compareBy<Path> {
+                        val name = it.fileName.toString()
+                            .substringBeforeLast('.', it.fileName.toString())
+                            .lowercase()
+                        levenshteinDistance(requestedName, name)
+                    }.thenBy { it.toString().lowercase() }
+                )
+        } ?: requestedPath
+    }
+
+    private fun levenshteinDistance(first: String, second: String): Int {
+        var previousRow = IntArray(second.length + 1) { it }
+        for (i in first.indices) {
+            val currentRow = IntArray(second.length + 1)
+            currentRow[0] = i + 1
+            for (j in second.indices) {
+                val substitutionCost = if (first[i] == second[j]) 0 else 1
+                currentRow[j + 1] = minOf(
+                    currentRow[j] + 1,
+                    previousRow[j + 1] + 1,
+                    previousRow[j] + substitutionCost
+                )
+            }
+            previousRow = currentRow
+        }
+        return previousRow[second.length]
     }
 
     fun readLineIni(path: Path): Placement =
