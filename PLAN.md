@@ -1,0 +1,3 @@
+- automatisk finn opptak og match dem med voice packs
+- la brukeren velge opptak som skal eksporteres
+- benytt ffmpeg til å splice lyd og video sammen
